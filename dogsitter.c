@@ -1,12 +1,12 @@
 #include <stdio.h>
-#include <stdlib.h> 
-#include <string.h> 
-#include "dogsitter.h" 
+#include <stdlib.h>
+#include <string.h>
+#include "dogsitter.h"
 
 // --- VARIÁVEIS GLOBAIS PARA ARMAZENAMENTO DINÂMICO ---
 Dogsitter *listaSitters = NULL;
 int numSitters = 0;
-int capSitters = 0; 
+int capSitters = 0;
 
 Cliente *listaClientes = NULL;
 int numClientes = 0;
@@ -16,7 +16,7 @@ Reserva *listaReservas = NULL;
 int numReservas = 0;
 int capReservas = 0;
 
-// Nomes dos arquivos de dados (AGORA .txt)
+// Nomes dos arquivos de dados
 const char *FILE_SITTERS = "sitters.txt";
 const char *FILE_CLIENTS = "clients.txt";
 const char *FILE_RESERVATIONS = "reservations.txt";
@@ -46,7 +46,7 @@ int lerInteiro(const char *prompt) {
     char *endptr;
     while (1) {
         lerString(prompt, buffer, sizeof(buffer));
-        valor = strtol(buffer, &endptr, 10); 
+        valor = strtol(buffer, &endptr, 10);
         
         if (endptr == buffer || *endptr != '\0') {
             printf("Entrada invalida. Digite um numero inteiro.\n");
@@ -62,7 +62,7 @@ float lerFloat(const char *prompt) {
     char *endptr;
     while (1) {
         lerString(prompt, buffer, sizeof(buffer));
-        valor = strtof(buffer, &endptr); 
+        valor = strtof(buffer, &endptr);
         
         if (endptr == buffer || *endptr != '\0') {
             printf("Entrada invalida. Digite um numero (ex: 50.75).\n");
@@ -73,7 +73,6 @@ float lerFloat(const char *prompt) {
 }
 
 // --- IMPLEMENTAÇÃO DOS MENUS (PROTÓTIPOS DE TELA) ---
-// (Sem alterações aqui)
 
 void exibirMenuPrincipal() {
     printf("\n--- Sistema de Reserva de Dogsitters ---\n");
@@ -99,22 +98,22 @@ void exibirSubMenu(const char *titulo) {
 
 void cadastrarDogsitter() {
     if (numSitters == capSitters) {
-        capSitters = (capSitters == 0) ? 10 : capSitters * 2; 
+        capSitters = (capSitters == 0) ? 10 : capSitters * 2;
         listaSitters = (Dogsitter*) realloc(listaSitters, capSitters * sizeof(Dogsitter));
         if (listaSitters == NULL) {
             printf("Erro critico: Falha ao alocar memoria!\n");
-            exit(1); 
+            exit(1);
         }
     }
 
-    Dogsitter *novo = &listaSitters[numSitters]; 
+    Dogsitter *novo = &listaSitters[numSitters];
     novo->id = getProximoIDDogsitter();
     printf("Cadastrando novo Dogsitter (ID: %d)\n", novo->id);
     lerString("Nome: ", novo->nome, 100);
     lerString("Telefone: ", novo->telefone, 20);
     novo->taxaPorDia = lerFloat("Taxa por dia (R$): ");
 
-    numSitters++; 
+    numSitters++;
     printf("Dogsitter cadastrado com sucesso!\n");
 }
 
@@ -125,7 +124,7 @@ void listarDogsitters() {
         return;
     }
     for (int i = 0; i < numSitters; i++) {
-        Dogsitter *s = &listaSitters[i]; 
+        Dogsitter *s = &listaSitters[i];
         printf("ID: %d | Nome: %s | Telefone: %s | Taxa: R$ %.2f\n",
                s->id, s->nome, s->telefone, s->taxaPorDia);
     }
@@ -134,10 +133,10 @@ void listarDogsitters() {
 Dogsitter* buscarDogsitterPorID(int id) {
     for (int i = 0; i < numSitters; i++) {
         if (listaSitters[i].id == id) {
-            return &listaSitters[i]; 
+            return &listaSitters[i];
         }
     }
-    return NULL; 
+    return NULL;
 }
 
 void atualizarDogsitter() {
@@ -158,8 +157,22 @@ void atualizarDogsitter() {
     lerString("Novo Telefone: ", buffer, 20);
     if (strlen(buffer) > 0) strcpy(s->telefone, buffer);
 
-    float novaTaxa = lerFloat("Nova Taxa por dia (R$): ");
-    s->taxaPorDia = novaTaxa;
+    // CORREÇÃO: Permite pular a taxa (deixar em branco) para manter a atual
+    char bufferTaxa[50];
+    printf("Nova Taxa por dia (R$) (Atual: %.2f): ", s->taxaPorDia);
+    lerString("", bufferTaxa, 50); // Lê como string
+    
+    if (strlen(bufferTaxa) > 0) {
+        char *endptr;
+        float novaTaxa = strtof(bufferTaxa, &endptr);
+        
+        // Valida se a conversão foi bem-sucedida
+        if (endptr == bufferTaxa || *endptr != '\0') {
+            printf("Entrada invalida. A taxa nao foi alterada.\n");
+        } else {
+            s->taxaPorDia = novaTaxa;
+        }
+    }
     
     printf("Dados atualizados com sucesso!\n");
 }
@@ -180,6 +193,7 @@ void excluirDogsitter() {
         return;
     }
 
+    // Validação de integridade: não exclui se tiver reserva ativa
     for(int i=0; i < numReservas; i++) {
         if(listaReservas[i].idDogsitter == id && listaReservas[i].status == 'A') {
             printf("Erro: Dogsitter nao pode ser excluido pois possui reservas ativas.\n");
@@ -187,11 +201,12 @@ void excluirDogsitter() {
         }
     }
 
+    // Otimização: move o último elemento para a posição do excluído
     if (indice != numSitters - 1) {
         listaSitters[indice] = listaSitters[numSitters - 1];
     }
     
-    numSitters--;     
+    numSitters--;
     printf("Dogsitter excluido com sucesso!\n");
 }
 
@@ -281,6 +296,7 @@ void excluirCliente() {
         return;
     }
 
+    // Validação de integridade
     for(int i=0; i < numReservas; i++) {
         if(listaReservas[i].idCliente == id && listaReservas[i].status == 'A') {
             printf("Erro: Cliente nao pode ser excluido pois possui reservas ativas.\n");
@@ -338,8 +354,8 @@ void criarReserva() {
     nova->idDogsitter = sitter->id;
     
     lerString("Data de Inicio (DD/MM/AAAA): ", nova->dataInicio, 11);
-    lerString("Data de Fim (DD/MM/AAAA): ", nova->dataFim, 11);
-
+    
+    // CORREÇÃO: A quantidade de dias é a fonte do cálculo, removendo a dataFim
     int dias = lerInteiro("Quantidade de dias da reserva: ");
     nova->custoTotal = sitter->taxaPorDia * dias;
     nova->status = 'A'; // Ativa
@@ -360,6 +376,7 @@ void listarReservas() {
         Cliente *c = buscarClientePorID(r->idCliente);
         Dogsitter *s = buscarDogsitterPorID(r->idDogsitter);
         
+        // Programação defensiva (caso cliente/sitter tenha sido excluído)
         const char *nomeCliente = (c != NULL) ? c->nome : "???";
         const char *nomeSitter = (s != NULL) ? s->nome : "???";
         const char *status = (r->status == 'A') ? "Ativa" : "Cancelada";
@@ -367,7 +384,7 @@ void listarReservas() {
         printf("ID: %d | Status: %s\n", r->id, status);
         printf("  Cliente: %s (ID: %d)\n", nomeCliente, r->idCliente);
         printf("  Dogsitter: %s (ID: %d)\n", nomeSitter, r->idDogsitter);
-        printf("  Periodo: %s a %s\n", r->dataInicio, r->dataFim);
+        printf("  Data Inicio: %s\n", r->dataInicio); // CORREÇÃO: Exibe apenas a data de início
         printf("  Custo: R$ %.2f\n", r->custoTotal);
         printf("--------------------------------------\n");
     }
@@ -400,50 +417,37 @@ Reserva* buscarReservaPorID(int id) {
     return NULL;
 }
 
-// --- IMPLEMENTAÇÃO - FUNÇÃO RECURSIVA ---
+// --- IMPLEMENTAÇÃO - GERAÇÃO DE ID (MÉTODO OTIMIZADO) ---
 
-int idExiste(int* idsUsados, int count, int id) {
-    for(int i = 0; i < count; i++) {
-        if(idsUsados[i] == id) return 1; 
-    }
-    return 0; 
-}
-
-int encontrarProximoIDDisponivel(int* idsUsados, int count, int idAtual) {
-    if (!idExiste(idsUsados, count, idAtual)) {
-        return idAtual;
-    }
-    return encontrarProximoIDDisponivel(idsUsados, count, idAtual + 1);
-}
-
+// Encontra o maior ID existente e retorna +1
 int getProximoIDDogsitter() {
-    int *ids = (int*)malloc(numSitters * sizeof(int));
-    for(int i=0; i<numSitters; i++) ids[i] = listaSitters[i].id;
-    
-    int proximoID = encontrarProximoIDDisponivel(ids, numSitters, 1);
-    
-    free(ids); 
-    return proximoID;
+    int maxID = 0;
+    for(int i = 0; i < numSitters; i++) {
+        if(listaSitters[i].id > maxID) {
+            maxID = listaSitters[i].id;
+        }
+    }
+    return maxID + 1;
 }
 
 int getProximoIDCliente() {
-    int *ids = (int*)malloc(numClientes * sizeof(int));
-    for(int i=0; i<numClientes; i++) ids[i] = listaClientes[i].id;
-    
-    int proximoID = encontrarProximoIDDisponivel(ids, numClientes, 1);
-    
-    free(ids);
-    return proximoID;
+    int maxID = 0;
+    for(int i = 0; i < numClientes; i++) {
+        if(listaClientes[i].id > maxID) {
+            maxID = listaClientes[i].id;
+        }
+    }
+    return maxID + 1;
 }
 
 int getProximoIDReserva() {
-    int *ids = (int*)malloc(numReservas * sizeof(int));
-    for(int i=0; i<numReservas; i++) ids[i] = listaReservas[i].id;
-    
-    int proximoID = encontrarProximoIDDisponivel(ids, numReservas, 1);
-    
-    free(ids);
-    return proximoID;
+    int maxID = 0;
+    for(int i = 0; i < numReservas; i++) {
+        if(listaReservas[i].id > maxID) {
+            maxID = listaReservas[i].id;
+        }
+    }
+    return maxID + 1;
 }
 
 
@@ -457,9 +461,8 @@ void removerNewline(char *str) {
 // Funções específicas para Dogsitters
 void carregarDogsittersTXT() {
     FILE *f = fopen(FILE_SITTERS, "r");
-    if (f == NULL) return; // Arquivo não existe, normal na primeira vez
+    if (f == NULL) return; 
 
-    // Alocação inicial
     capSitters = 10;
     numSitters = 0;
     listaSitters = (Dogsitter*) malloc(capSitters * sizeof(Dogsitter));
@@ -467,9 +470,7 @@ void carregarDogsittersTXT() {
 
     char buffer[256];
     
-    // Lê o ID
     while (fgets(buffer, sizeof(buffer), f) != NULL) {
-        // Alocação dinâmica (crescimento)
         if (numSitters == capSitters) {
             capSitters *= 2;
             listaSitters = (Dogsitter*) realloc(listaSitters, capSitters * sizeof(Dogsitter));
@@ -477,18 +478,13 @@ void carregarDogsittersTXT() {
         }
 
         Dogsitter *s = &listaSitters[numSitters];
-
-        s->id = atoi(buffer); // Linha 1: ID
-
-        fgets(s->nome, 100, f); // Linha 2: Nome
+        s->id = atoi(buffer); 
+        fgets(s->nome, 100, f); 
         removerNewline(s->nome);
-        
-        fgets(s->telefone, 20, f); // Linha 3: Telefone
+        fgets(s->telefone, 20, f); 
         removerNewline(s->telefone);
-        
-        fgets(buffer, sizeof(buffer), f); // Linha 4: Taxa
+        fgets(buffer, sizeof(buffer), f); 
         s->taxaPorDia = atof(buffer);
-
         numSitters++;
     }
     fclose(f);
@@ -516,7 +512,7 @@ void salvarDogsittersTXT() {
 // Funções específicas para Clientes
 void carregarClientesTXT() {
     FILE *f = fopen(FILE_CLIENTS, "r");
-    if (f == NULL) return; 
+    if (f == NULL) return;
 
     capClientes = 10;
     numClientes = 0;
@@ -533,17 +529,13 @@ void carregarClientesTXT() {
         }
         
         Cliente *c = &listaClientes[numClientes];
-        c->id = atoi(buffer); // Linha 1: ID
-
-        fgets(c->nome, 100, f); // Linha 2: Nome
+        c->id = atoi(buffer);
+        fgets(c->nome, 100, f);
         removerNewline(c->nome);
-        
-        fgets(c->telefone, 20, f); // Linha 3: Telefone
+        fgets(c->telefone, 20, f);
         removerNewline(c->telefone);
-        
-        fgets(c->nomeCachorro, 100, f); // Linha 4: Nome do Cachorro
+        fgets(c->nomeCachorro, 100, f);
         removerNewline(c->nomeCachorro);
-
         numClientes++;
     }
     fclose(f);
@@ -571,7 +563,7 @@ void salvarClientesTXT() {
 // Funções específicas para Reservas
 void carregarReservasTXT() {
     FILE *f = fopen(FILE_RESERVATIONS, "r");
-    if (f == NULL) return; 
+    if (f == NULL) return;
 
     capReservas = 10;
     numReservas = 0;
@@ -599,13 +591,12 @@ void carregarReservasTXT() {
         fgets(r->dataInicio, 11, f); // Linha 4: Data Inicio
         removerNewline(r->dataInicio);
 
-        fgets(r->dataFim, 11, f); // Linha 5: Data Fim
-        removerNewline(r->dataFim);
-
-        fgets(buffer, sizeof(buffer), f); // Linha 6: Custo
+        // CORREÇÃO: A dataFim foi removida
+        
+        fgets(buffer, sizeof(buffer), f); // Linha 5: Custo
         r->custoTotal = atof(buffer);
 
-        fgets(buffer, sizeof(buffer), f); // Linha 7: Status
+        fgets(buffer, sizeof(buffer), f); // Linha 6: Status
         r->status = buffer[0];
 
         numReservas++;
@@ -627,7 +618,7 @@ void salvarReservasTXT() {
         fprintf(f, "%d\n", r->idCliente);
         fprintf(f, "%d\n", r->idDogsitter);
         fprintf(f, "%s\n", r->dataInicio);
-        fprintf(f, "%s\n", r->dataFim);
+        // CORREÇÃO: A dataFim foi removida
         fprintf(f, "%.2f\n", r->custoTotal);
         fprintf(f, "%c\n", r->status);
     }
