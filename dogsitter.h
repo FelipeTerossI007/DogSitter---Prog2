@@ -24,7 +24,7 @@ typedef struct {
     int idCliente;
     int idDogsitter;
     char dataInicio[11]; // Formato "DD/MM/AAAA"
-    char dataFim[11];    // Formato "DD/MM/AAAA"
+    // O campo dataFim foi removido para simplificar a lógica
     float custoTotal;
     char status; // 'A' = Ativa, 'C' = Cancelada
 } Reserva;
@@ -62,8 +62,7 @@ void listarReservas();
 void cancelarReserva();
 Reserva* buscarReservaPorID(int id); // Função auxiliar
 
-// Função Recursiva (Requisito do projeto)
-int encontrarProximoIDDisponivel(int* idsUsados, int count, int idAtual);
+// Função para geração de ID (agora mais eficiente)
 int getProximoIDDogsitter();
 int getProximoIDCliente();
 int getProximoIDReserva();
